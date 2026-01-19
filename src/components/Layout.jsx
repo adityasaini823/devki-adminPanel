@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../redux/slices/authSlice';
 import './Layout.css';
 
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { admin, logout } = useAuth();
+  const dispatch = useDispatch();
+  const { admin } = useSelector((state) => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     navigate('/login');
   };
 

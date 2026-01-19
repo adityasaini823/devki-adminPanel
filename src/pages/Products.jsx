@@ -1,41 +1,25 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import api from '../config/api';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../redux/slices/productsSlice';
 import './DataTable.css';
 
 const Products = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const { products, pagination, loading, error, actionLoading } = useSelector((state) => state.products);
   const [search, setSearch] = useState('');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
+  const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [editForm, setEditForm] = useState({});
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/api/admin/products', {
-        params: { page: pagination.page, limit: pagination.limit, search },
-      });
-      setProducts(response.data.products);
-      setPagination(prev => ({ ...prev, ...response.data.pagination }));
-    } catch (err) {
-      setError('Failed to load products');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, pagination.limit, search]);
-
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    dispatch(fetchProducts({ page, limit: 20, search }));
+  }, [dispatch, page, search]);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPage(1);
   };
 
   const handleAddNew = () => {
@@ -69,39 +53,23 @@ const Products = () => {
   };
 
   const handleSave = async () => {
-    try {
-      if (isNew) {
-        await api.post('/api/products', editForm);
-      } else {
-        await api.patch(`/api/products/${selectedProduct.id}`, editForm);
-      }
-      setShowModal(false);
-      fetchProducts();
-    } catch (err) {
-      alert('Failed to save product');
-      console.error(err);
+    if (isNew) {
+      await dispatch(createProduct(editForm));
+    } else {
+      await dispatch(updateProduct({ id: selectedProduct.id, data: editForm }));
     }
+    setShowModal(false);
+    dispatch(fetchProducts({ page, limit: 20, search }));
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await api.delete(`/api/products/${id}`);
-      fetchProducts();
-    } catch (err) {
-      alert('Failed to delete product');
-      console.error(err);
-    }
+    await dispatch(deleteProduct(id));
   };
 
   const toggleActive = async (product) => {
-    try {
-      await api.patch(`/api/products/${product.id}`, { is_active: !product.is_active });
-      fetchProducts();
-    } catch (err) {
-      alert('Failed to update product');
-      console.error(err);
-    }
+    await dispatch(updateProduct({ id: product.id, data: { is_active: !product.is_active } }));
+    dispatch(fetchProducts({ page, limit: 20, search }));
   };
 
   const formatCurrency = (amount) => {
@@ -127,7 +95,9 @@ const Products = () => {
           onChange={handleSearch}
           className="search-input"
         />
-        <button className="btn-add" onClick={handleAddNew}>+ Add Product</button>
+        <button className="btn-add" onClick={handleAddNew}>
+          + Add Product
+        </button>
       </div>
 
       {loading ? (
@@ -158,7 +128,9 @@ const Products = () => {
                           src={product.product_image}
                           alt={product.product_name}
                           style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6 }}
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/48'; }}
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/48';
+                          }}
                         />
                       </td>
                       <td className="name-cell">{product.product_name}</td>
@@ -178,10 +150,7 @@ const Products = () => {
                           <button className="btn-edit" onClick={() => handleEdit(product)}>
                             Edit
                           </button>
-                          <button
-                            className="btn-view"
-                            onClick={() => toggleActive(product)}
-                          >
+                          <button className="btn-view" onClick={() => toggleActive(product)}>
                             {product.is_active ? 'Deactivate' : 'Activate'}
                           </button>
                           <button className="btn-delete" onClick={() => handleDelete(product.id)}>
@@ -193,7 +162,9 @@ const Products = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="no-data">No products found</td>
+                    <td colSpan="7" className="no-data">
+                      No products found
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -201,17 +172,13 @@ const Products = () => {
           </div>
 
           <div className="pagination">
-            <button
-              disabled={pagination.page <= 1}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-            >
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </button>
-            <span>Page {pagination.page} of {pagination.pages || 1}</span>
-            <button
-              disabled={pagination.page >= pagination.pages}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-            >
+            <span>
+              Page {page} of {pagination.pages || 1}
+            </span>
+            <button disabled={page >= pagination.pages} onClick={() => setPage((p) => p + 1)}>
               Next
             </button>
           </div>
@@ -237,7 +204,9 @@ const Products = () => {
                 <input
                   type="number"
                   value={editForm.product_price}
-                  onChange={(e) => setEditForm({ ...editForm, product_price: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, product_price: parseFloat(e.target.value) })
+                  }
                   required
                 />
               </div>
@@ -246,7 +215,9 @@ const Products = () => {
                 <input
                   type="number"
                   value={editForm.product_stock}
-                  onChange={(e) => setEditForm({ ...editForm, product_stock: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, product_stock: parseInt(e.target.value) })
+                  }
                   required
                 />
               </div>
@@ -287,9 +258,11 @@ const Products = () => {
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn-save" onClick={handleSave}>
-                {isNew ? 'Create Product' : 'Save Changes'}
+              <button className="btn-cancel" onClick={() => setShowModal(false)}>
+                Cancel
+              </button>
+              <button className="btn-save" onClick={handleSave} disabled={actionLoading}>
+                {actionLoading ? 'Saving...' : isNew ? 'Create Product' : 'Save Changes'}
               </button>
             </div>
           </div>

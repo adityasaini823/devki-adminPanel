@@ -1,27 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import api from '../config/api';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardStats } from '../redux/slices/dashboardSlice';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const { stats, loading, error } = useSelector((state) => state.dashboard);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get('/api/admin/dashboard/stats');
-        setStats(response.data.stats);
-      } catch (err) {
-        setError('Failed to load dashboard stats');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+    dispatch(fetchDashboardStats());
+  }, [dispatch]);
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -149,7 +137,9 @@ const Dashboard = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="no-data">No recent orders</td>
+                  <td colSpan="5" className="no-data">
+                    No recent orders
+                  </td>
                 </tr>
               )}
             </tbody>

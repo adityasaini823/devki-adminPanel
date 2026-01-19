@@ -1,44 +1,23 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import api from '../config/api';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchOrders, updateOrderStatus } from '../redux/slices/ordersSlice';
 import './DataTable.css';
 
 const Orders = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const { orders, pagination, loading, error } = useSelector((state) => state.orders);
   const [statusFilter, setStatusFilter] = useState('');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
+  const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const fetchOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/api/admin/orders', {
-        params: { page: pagination.page, limit: pagination.limit, status: statusFilter || undefined },
-      });
-      setOrders(response.data.orders);
-      setPagination(prev => ({ ...prev, ...response.data.pagination }));
-    } catch (err) {
-      setError('Failed to load orders');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, pagination.limit, statusFilter]);
-
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    dispatch(fetchOrders({ page, limit: 20, status: statusFilter }));
+  }, [dispatch, page, statusFilter]);
 
   const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      await api.patch(`/api/admin/orders/${orderId}/status`, { order_status: newStatus });
-      fetchOrders();
-    } catch (err) {
-      alert('Failed to update order status');
-      console.error(err);
-    }
+    await dispatch(updateOrderStatus({ id: orderId, order_status: newStatus }));
+    dispatch(fetchOrders({ page, limit: 20, status: statusFilter }));
   };
 
   const handleViewDetails = (order) => {
@@ -90,13 +69,15 @@ const Orders = () => {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
-            setPagination(prev => ({ ...prev, page: 1 }));
+            setPage(1);
           }}
           className="filter-select"
         >
           <option value="">All Statuses</option>
-          {orderStatuses.map(status => (
-            <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+          {orderStatuses.map((status) => (
+            <option key={status} value={status}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </option>
           ))}
         </select>
       </div>
@@ -136,7 +117,10 @@ const Orders = () => {
                       <td>
                         <span
                           className="status-badge"
-                          style={{ backgroundColor: order.payment_status === 'completed' ? '#10b981' : '#f59e0b' }}
+                          style={{
+                            backgroundColor:
+                              order.payment_status === 'completed' ? '#10b981' : '#f59e0b',
+                          }}
                         >
                           {order.payment_status}
                         </span>
@@ -155,8 +139,10 @@ const Orders = () => {
                             fontSize: '0.75rem',
                           }}
                         >
-                          {orderStatuses.map(status => (
-                            <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+                          {orderStatuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </option>
                           ))}
                         </select>
                       </td>
@@ -170,7 +156,9 @@ const Orders = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="no-data">No orders found</td>
+                    <td colSpan="8" className="no-data">
+                      No orders found
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -178,17 +166,13 @@ const Orders = () => {
           </div>
 
           <div className="pagination">
-            <button
-              disabled={pagination.page <= 1}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-            >
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </button>
-            <span>Page {pagination.page} of {pagination.pages || 1}</span>
-            <button
-              disabled={pagination.page >= pagination.pages}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-            >
+            <span>
+              Page {page} of {pagination.pages || 1}
+            </span>
+            <button disabled={page >= pagination.pages} onClick={() => setPage((p) => p + 1)}>
               Next
             </button>
           </div>
@@ -199,11 +183,15 @@ const Orders = () => {
         <div className="modal-overlay">
           <div className="modal">
             <h2>Order Details - {selectedOrder.order_number}</h2>
-            
+
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ marginBottom: '0.5rem', color: '#374151' }}>Customer Info</h4>
-              <p><strong>Name:</strong> {selectedOrder.user?.name}</p>
-              <p><strong>Mobile:</strong> {selectedOrder.user?.mobile}</p>
+              <p>
+                <strong>Name:</strong> {selectedOrder.user?.name}
+              </p>
+              <p>
+                <strong>Mobile:</strong> {selectedOrder.user?.mobile}
+              </p>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
@@ -231,15 +219,31 @@ const Orders = () => {
                     <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
                       <td style={{ padding: '0.5rem' }}>{item.product_name}</td>
                       <td style={{ textAlign: 'center', padding: '0.5rem' }}>{item.quantity}</td>
-                      <td style={{ textAlign: 'right', padding: '0.5rem' }}>{formatCurrency(item.product_price)}</td>
-                      <td style={{ textAlign: 'right', padding: '0.5rem' }}>{formatCurrency(item.total_price)}</td>
+                      <td style={{ textAlign: 'right', padding: '0.5rem' }}>
+                        {formatCurrency(item.product_price)}
+                      </td>
+                      <td style={{ textAlign: 'right', padding: '0.5rem' }}>
+                        {formatCurrency(item.total_price)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan="3" style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 600 }}>Total:</td>
-                    <td style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 600, color: '#059669' }}>
+                    <td
+                      colSpan="3"
+                      style={{ textAlign: 'right', padding: '0.5rem', fontWeight: 600 }}
+                    >
+                      Total:
+                    </td>
+                    <td
+                      style={{
+                        textAlign: 'right',
+                        padding: '0.5rem',
+                        fontWeight: 600,
+                        color: '#059669',
+                      }}
+                    >
                       {formatCurrency(selectedOrder.total_amount)}
                     </td>
                   </tr>
@@ -248,7 +252,9 @@ const Orders = () => {
             </div>
 
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Close</button>
+              <button className="btn-cancel" onClick={() => setShowModal(false)}>
+                Close
+              </button>
             </div>
           </div>
         </div>

@@ -1,42 +1,21 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import api from '../config/api';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchSubscriptions, updateSubscriptionStatus } from '../redux/slices/subscriptionsSlice';
 import './DataTable.css';
 
 const Subscriptions = () => {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const { subscriptions, pagination, loading, error } = useSelector((state) => state.subscriptions);
   const [statusFilter, setStatusFilter] = useState('');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
-
-  const fetchSubscriptions = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/api/admin/subscriptions', {
-        params: { page: pagination.page, limit: pagination.limit, status: statusFilter || undefined },
-      });
-      setSubscriptions(response.data.subscriptions);
-      setPagination(prev => ({ ...prev, ...response.data.pagination }));
-    } catch (err) {
-      setError('Failed to load subscriptions');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, pagination.limit, statusFilter]);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchSubscriptions();
-  }, [fetchSubscriptions]);
+    dispatch(fetchSubscriptions({ page, limit: 20, status: statusFilter }));
+  }, [dispatch, page, statusFilter]);
 
   const handleStatusChange = async (subscriptionId, newStatus) => {
-    try {
-      await api.patch(`/api/admin/subscriptions/${subscriptionId}/status`, { status: newStatus });
-      fetchSubscriptions();
-    } catch (err) {
-      alert('Failed to update subscription status');
-      console.error(err);
-    }
+    await dispatch(updateSubscriptionStatus({ id: subscriptionId, status: newStatus }));
+    dispatch(fetchSubscriptions({ page, limit: 20, status: statusFilter }));
   };
 
   const formatCurrency = (amount) => {
@@ -78,13 +57,15 @@ const Subscriptions = () => {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
-            setPagination(prev => ({ ...prev, page: 1 }));
+            setPage(1);
           }}
           className="filter-select"
         >
           <option value="">All Statuses</option>
-          {subscriptionStatuses.map(status => (
-            <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+          {subscriptionStatuses.map((status) => (
+            <option key={status} value={status}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </option>
           ))}
         </select>
       </div>
@@ -146,7 +127,7 @@ const Subscriptions = () => {
                             fontSize: '0.75rem',
                           }}
                         >
-                          {subscriptionStatuses.map(status => (
+                          {subscriptionStatuses.map((status) => (
                             <option key={status} value={status}>
                               {status.charAt(0).toUpperCase() + status.slice(1)}
                             </option>
@@ -157,7 +138,9 @@ const Subscriptions = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="no-data">No subscriptions found</td>
+                    <td colSpan="8" className="no-data">
+                      No subscriptions found
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -165,17 +148,13 @@ const Subscriptions = () => {
           </div>
 
           <div className="pagination">
-            <button
-              disabled={pagination.page <= 1}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-            >
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </button>
-            <span>Page {pagination.page} of {pagination.pages || 1}</span>
-            <button
-              disabled={pagination.page >= pagination.pages}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-            >
+            <span>
+              Page {page} of {pagination.pages || 1}
+            </span>
+            <button disabled={page >= pagination.pages} onClick={() => setPage((p) => p + 1)}>
               Next
             </button>
           </div>

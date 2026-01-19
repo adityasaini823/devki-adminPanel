@@ -1,40 +1,24 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import api from '../config/api';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUsers, updateUser, deleteUser } from '../redux/slices/usersSlice';
 import './DataTable.css';
 
 const Users = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+  const { users, pagination, loading, error } = useSelector((state) => state.users);
   const [search, setSearch] = useState('');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
+  const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editForm, setEditForm] = useState({});
 
-  const fetchUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/api/admin/users', {
-        params: { page: pagination.page, limit: pagination.limit, search },
-      });
-      setUsers(response.data.users);
-      setPagination(prev => ({ ...prev, ...response.data.pagination }));
-    } catch (err) {
-      setError('Failed to load users');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, pagination.limit, search]);
-
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    dispatch(fetchUsers({ page, limit: 20, search }));
+  }, [dispatch, page, search]);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPage(1);
   };
 
   const handleEdit = (user) => {
@@ -53,25 +37,14 @@ const Users = () => {
   };
 
   const handleSave = async () => {
-    try {
-      await api.patch(`/api/admin/users/${selectedUser.id}`, editForm);
-      setShowModal(false);
-      fetchUsers();
-    } catch (err) {
-      alert('Failed to update user');
-      console.error(err);
-    }
+    await dispatch(updateUser({ id: selectedUser.id, data: editForm }));
+    setShowModal(false);
+    dispatch(fetchUsers({ page, limit: 20, search }));
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
-    try {
-      await api.delete(`/api/admin/users/${id}`);
-      fetchUsers();
-    } catch (err) {
-      alert('Failed to delete user');
-      console.error(err);
-    }
+    await dispatch(deleteUser(id));
   };
 
   const formatCurrency = (amount) => {
@@ -135,7 +108,9 @@ const Users = () => {
                       </td>
                       <td>{user.mobile}</td>
                       <td>{user.email || '-'}</td>
-                      <td>{user.city}, {user.state}</td>
+                      <td>
+                        {user.city}, {user.state}
+                      </td>
                       <td className="wallet-cell">{formatCurrency(user.wallet_balance)}</td>
                       <td>{formatDate(user.createdAt)}</td>
                       <td>
@@ -152,7 +127,9 @@ const Users = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="no-data">No users found</td>
+                    <td colSpan="7" className="no-data">
+                      No users found
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -160,17 +137,13 @@ const Users = () => {
           </div>
 
           <div className="pagination">
-            <button
-              disabled={pagination.page <= 1}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-            >
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </button>
-            <span>Page {pagination.page} of {pagination.pages || 1}</span>
-            <button
-              disabled={pagination.page >= pagination.pages}
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-            >
+            <span>
+              Page {page} of {pagination.pages || 1}
+            </span>
+            <button disabled={page >= pagination.pages} onClick={() => setPage((p) => p + 1)}>
               Next
             </button>
           </div>
@@ -211,7 +184,9 @@ const Users = () => {
                 <input
                   type="number"
                   value={editForm.wallet_balance}
-                  onChange={(e) => setEditForm({ ...editForm, wallet_balance: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, wallet_balance: parseFloat(e.target.value) })
+                  }
                 />
               </div>
               <div className="form-group full-width">
@@ -248,8 +223,12 @@ const Users = () => {
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn-save" onClick={handleSave}>Save Changes</button>
+              <button className="btn-cancel" onClick={() => setShowModal(false)}>
+                Cancel
+              </button>
+              <button className="btn-save" onClick={handleSave}>
+                Save Changes
+              </button>
             </div>
           </div>
         </div>
