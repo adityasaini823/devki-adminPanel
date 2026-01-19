@@ -1,4 +1,6 @@
 import axios from 'axios';
+import store from '../redux/store';
+import { setCredentials, logout } from '../redux/slices/authSlice';
 
 // Create axios instance with base URL from environment
 const api = axios.create({
@@ -7,14 +9,17 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important: Send cookies with requests
 });
 
-// Request interceptor - adds auth token to all requests
+// Request interceptor - adds access token from Redux state (memory)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const state = store.getState();
+    const accessToken = state.auth.accessToken;
+    
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
@@ -23,21 +28,83 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handles errors globally
+// Response interceptor - handles token refresh on 401/403
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Handle 401/403 - redirect to login
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminUser');
-      
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401/403 and not a refresh request, try to refresh token
+    if (
+      (error.response?.status === 401 || error.response?.status === 403) &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes('/refresh') &&
+      !originalRequest.url.includes('/login')
+    ) {
+      if (isRefreshing) {
+        // Queue requests while refreshing
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Try to refresh the token
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        const { accessToken, admin } = response.data;
+        
+        // Update Redux store with new token
+        store.dispatch(setCredentials({ accessToken, admin }));
+        
+        processQueue(null, accessToken);
+        
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        
+        // Refresh failed - logout user
+        store.dispatch(logout());
+        
+        // Redirect to login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -46,6 +113,8 @@ api.interceptors.response.use(
 export const API_ENDPOINTS = {
   // Auth
   LOGIN: '/api/admin/login',
+  REFRESH: '/api/admin/refresh',
+  LOGOUT: '/api/admin/logout',
   
   // Dashboard
   DASHBOARD_STATS: '/api/admin/dashboard/stats',

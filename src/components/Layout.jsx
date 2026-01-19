@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../redux/slices/authSlice';
+import { logoutAdmin } from '../redux/slices/authSlice';
 import './Layout.css';
 
 const Layout = () => {
@@ -11,8 +11,8 @@ const Layout = () => {
   const { admin } = useSelector((state) => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    await dispatch(logoutAdmin());
     navigate('/login');
   };
 
