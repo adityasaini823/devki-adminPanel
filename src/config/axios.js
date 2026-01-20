@@ -4,7 +4,7 @@ import { setCredentials, logout } from '../redux/slices/authSlice';
 
 // Create axios instance with base URL from environment
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001',
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ api.interceptors.response.use(
       try {
         // Try to refresh the token
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/refresh`,
+          `${import.meta.env.VITE_API_URL }/api/admin/refresh`,
           {},
           { withCredentials: true }
         );
