@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import api from '../../config/axios';
 import './ImageUpload.css';
 
-const ImageUpload = ({ onUploadComplete, initialImage }) => {
+const ImageUpload = ({ onUploadComplete, initialImage, folder = 'devki/products' }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(initialImage || '');
   const [error, setError] = useState(null);
@@ -23,7 +23,8 @@ const ImageUpload = ({ onUploadComplete, initialImage }) => {
     formData.append('image', file);
 
     try {
-      const response = await api.post('/api/admin/upload', formData, {
+      // Pass the folder in the query string
+      const response = await api.post(`/api/admin/upload?folder=${folder}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
