@@ -232,11 +232,40 @@ const WalletTransactions = () => {
               </p>
               {selectedTransaction.payment_id && (
                 <p>
-                  <strong>Payment ID:</strong> {selectedTransaction.payment_id}
+                  <strong>Transaction ID:</strong> <span style={{ fontFamily: 'monospace', color: '#2563eb' }}>{selectedTransaction.payment_id}</span>
                 </p>
               )}
+              {selectedTransaction.payment_proof && (
+                <div style={{ marginTop: '1rem' }}>
+                  <p>
+                    <strong>Payment Proof:</strong>
+                  </p>
+                  <a 
+                    href={selectedTransaction.payment_proof} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <img 
+                      src={selectedTransaction.payment_proof} 
+                      alt="Payment Proof" 
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '300px', 
+                        objectFit: 'contain', 
+                        borderRadius: 8,
+                        border: '1px solid #e5e7eb',
+                        marginTop: '0.5rem',
+                        cursor: 'zoom-in'
+                      }} 
+                    />
+                  </a>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    Click image to view full size
+                  </p>
+                </div>
+              )}
               {selectedTransaction.bank_account?.account_number && (
-                <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ marginTop: '1rem' }}>
                   <p>
                     <strong>Bank Account:</strong>
                   </p>
@@ -246,7 +275,7 @@ const WalletTransactions = () => {
                 </div>
               )}
               {selectedTransaction.remarks && (
-                <p>
+                <p style={{ marginTop: '0.5rem' }}>
                   <strong>User Remarks:</strong> {selectedTransaction.remarks}
                 </p>
               )}
