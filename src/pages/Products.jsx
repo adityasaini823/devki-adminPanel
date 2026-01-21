@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../redux/slices/productsSlice';
+import ImageUpload from '../components/common/ImageUpload';
 import './DataTable.css';
 
 const Products = () => {
@@ -222,13 +223,10 @@ const Products = () => {
                 />
               </div>
               <div className="form-group full-width">
-                <label>Image URL *</label>
-                <input
-                  type="url"
-                  value={editForm.product_image}
-                  onChange={(e) => setEditForm({ ...editForm, product_image: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  required
+                <label>Product Image *</label>
+                <ImageUpload 
+                  initialImage={editForm.product_image}
+                  onUploadComplete={(url) => setEditForm({ ...editForm, product_image: url })}
                 />
               </div>
               <div className="form-group">
