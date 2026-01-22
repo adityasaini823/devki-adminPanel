@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { fetchWalletTransactions, updateWalletTransactionStatus } from '../redux/slices/walletSlice';
 import './DataTable.css';
 
@@ -33,22 +34,27 @@ const WalletTransactions = () => {
   };
 
   const handleSave = async () => {
-    await dispatch(
-      updateWalletTransactionStatus({
-        id: selectedTransaction.id,
-        status: updateForm.status,
-        admin_remarks: updateForm.admin_remarks,
-      })
-    );
-    setShowModal(false);
-    dispatch(
-      fetchWalletTransactions({
-        page,
-        limit: 20,
-        status: statusFilter,
-        transaction_type: typeFilter,
-      })
-    );
+    try {
+      await dispatch(
+        updateWalletTransactionStatus({
+          id: selectedTransaction.id,
+          status: updateForm.status,
+          admin_remarks: updateForm.admin_remarks,
+        })
+      ).unwrap();
+      toast.success(`Transaction ${updateForm.status}`);
+      setShowModal(false);
+      dispatch(
+        fetchWalletTransactions({
+          page,
+          limit: 20,
+          status: statusFilter,
+          transaction_type: typeFilter,
+        })
+      );
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update transaction');
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -240,23 +246,23 @@ const WalletTransactions = () => {
                   <p>
                     <strong>Payment Proof:</strong>
                   </p>
-                  <a 
-                    href={selectedTransaction.payment_proof} 
-                    target="_blank" 
+                  <a
+                    href={selectedTransaction.payment_proof}
+                    target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <img 
-                      src={selectedTransaction.payment_proof} 
-                      alt="Payment Proof" 
-                      style={{ 
-                        width: '100%', 
-                        maxHeight: '300px', 
-                        objectFit: 'contain', 
+                    <img
+                      src={selectedTransaction.payment_proof}
+                      alt="Payment Proof"
+                      style={{
+                        width: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'contain',
                         borderRadius: 8,
                         border: '1px solid #e5e7eb',
                         marginTop: '0.5rem',
                         cursor: 'zoom-in'
-                      }} 
+                      }}
                     />
                   </a>
                   <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>

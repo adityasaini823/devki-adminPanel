@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useSelector, useDispatch } from 'react-redux';
 import { checkAuth } from './redux/slices/authSlice';
 import Login from './pages/Login';
@@ -9,6 +10,7 @@ import Products from './pages/Products';
 import Orders from './pages/Orders';
 import Subscriptions from './pages/Subscriptions';
 import WalletTransactions from './pages/WalletTransactions';
+import Settings from './pages/Settings';
 import Layout from './components/Layout';
 
 const PrivateRoute = ({ children }) => {
@@ -59,8 +61,10 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="wallet" element={<WalletTransactions />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
+      <Toaster position="top-right" />
     </Router>
   );
 }

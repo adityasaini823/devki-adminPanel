@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../redux/slices/productsSlice';
 import ImageUpload from '../components/common/ImageUpload';
 import './DataTable.css';
@@ -54,23 +55,39 @@ const Products = () => {
   };
 
   const handleSave = async () => {
-    if (isNew) {
-      await dispatch(createProduct(editForm));
-    } else {
-      await dispatch(updateProduct({ id: selectedProduct.id, data: editForm }));
+    try {
+      if (isNew) {
+        await dispatch(createProduct(editForm)).unwrap();
+        toast.success('Product created successfully');
+      } else {
+        await dispatch(updateProduct({ id: selectedProduct.id, data: editForm })).unwrap();
+        toast.success('Product updated successfully');
+      }
+      setShowModal(false);
+      dispatch(fetchProducts({ page, limit: 20, search }));
+    } catch (err) {
+      toast.error(err?.message || 'Failed to save product');
     }
-    setShowModal(false);
-    dispatch(fetchProducts({ page, limit: 20, search }));
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    await dispatch(deleteProduct(id));
+    try {
+      await dispatch(deleteProduct(id)).unwrap();
+      toast.success('Product deleted successfully');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to delete product');
+    }
   };
 
   const toggleActive = async (product) => {
-    await dispatch(updateProduct({ id: product.id, data: { is_active: !product.is_active } }));
-    dispatch(fetchProducts({ page, limit: 20, search }));
+    try {
+      await dispatch(updateProduct({ id: product.id, data: { is_active: !product.is_active } })).unwrap();
+      toast.success(`Product ${product.is_active ? 'deactivated' : 'activated'}`);
+      dispatch(fetchProducts({ page, limit: 20, search }));
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update product status');
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -224,7 +241,7 @@ const Products = () => {
               </div>
               <div className="form-group full-width">
                 <label>Product Image *</label>
-                <ImageUpload 
+                <ImageUpload
                   initialImage={editForm.product_image}
                   onUploadComplete={(url) => setEditForm({ ...editForm, product_image: url })}
                 />

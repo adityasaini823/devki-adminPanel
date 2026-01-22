@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { fetchUsers, updateUser, deleteUser } from '../redux/slices/usersSlice';
 import './DataTable.css';
 
@@ -37,14 +38,24 @@ const Users = () => {
   };
 
   const handleSave = async () => {
-    await dispatch(updateUser({ id: selectedUser.id, data: editForm }));
-    setShowModal(false);
-    dispatch(fetchUsers({ page, limit: 20, search }));
+    try {
+      await dispatch(updateUser({ id: selectedUser.id, data: editForm })).unwrap();
+      toast.success('User updated successfully');
+      setShowModal(false);
+      dispatch(fetchUsers({ page, limit: 20, search }));
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update user');
+    }
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
-    await dispatch(deleteUser(id));
+    try {
+      await dispatch(deleteUser(id)).unwrap();
+      toast.success('User deleted successfully');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to delete user');
+    }
   };
 
   const formatCurrency = (amount) => {

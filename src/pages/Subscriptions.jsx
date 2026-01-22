@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { fetchSubscriptions, updateSubscriptionStatus } from '../redux/slices/subscriptionsSlice';
 import './DataTable.css';
 
@@ -14,8 +15,13 @@ const Subscriptions = () => {
   }, [dispatch, page, statusFilter]);
 
   const handleStatusChange = async (subscriptionId, newStatus) => {
-    await dispatch(updateSubscriptionStatus({ id: subscriptionId, status: newStatus }));
-    dispatch(fetchSubscriptions({ page, limit: 20, status: statusFilter }));
+    try {
+      await dispatch(updateSubscriptionStatus({ id: subscriptionId, status: newStatus })).unwrap();
+      toast.success(`Subscription status updated to ${newStatus}`);
+      dispatch(fetchSubscriptions({ page, limit: 20, status: statusFilter }));
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update subscription status');
+    }
   };
 
   const formatCurrency = (amount) => {

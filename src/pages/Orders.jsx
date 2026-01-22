@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { fetchOrders, updateOrderStatus } from '../redux/slices/ordersSlice';
 import './DataTable.css';
 
@@ -16,8 +17,13 @@ const Orders = () => {
   }, [dispatch, page, statusFilter]);
 
   const handleStatusChange = async (orderId, newStatus) => {
-    await dispatch(updateOrderStatus({ id: orderId, order_status: newStatus }));
-    dispatch(fetchOrders({ page, limit: 20, status: statusFilter }));
+    try {
+      await dispatch(updateOrderStatus({ id: orderId, order_status: newStatus })).unwrap();
+      toast.success(`Order status updated to ${newStatus}`);
+      dispatch(fetchOrders({ page, limit: 20, status: statusFilter }));
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update order status');
+    }
   };
 
   const handleViewDetails = (order) => {
