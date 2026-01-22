@@ -1,20 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import { fetchWalletTransactions, updateWalletTransactionStatus } from '../redux/slices/walletSlice';
+import { fetchWalletTransactions, updateWalletTransactionStatus, createWalletTransaction } from '../redux/slices/walletSlice';
+import { fetchUsers } from '../redux/slices/usersSlice';
 import './DataTable.css';
 
 const WalletTransactions = () => {
   const dispatch = useDispatch();
-  const { transactions, pagination, loading, error, updateLoading } = useSelector(
+  const { transactions, pagination, loading, error, updateLoading, createLoading } = useSelector(
     (state) => state.wallet
   );
+  const { users, loading: usersLoading } = useSelector((state) => state.users);
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [page, setPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [updateForm, setUpdateForm] = useState({ status: '', admin_remarks: '' });
+  
+  // Add transaction modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ userId: '', amount: '', type: 'credit', remarks: '' });
+  const [userSearch, setUserSearch] = useState('');
+  const [userPage, setUserPage] = useState(1);
 
   useEffect(() => {
     dispatch(
@@ -26,6 +34,13 @@ const WalletTransactions = () => {
       })
     );
   }, [dispatch, page, statusFilter, typeFilter]);
+
+  // Fetch users when add modal opens
+  useEffect(() => {
+    if (showAddModal) {
+      dispatch(fetchUsers({ page: userPage, limit: 50, search: userSearch }));
+    }
+  }, [dispatch, showAddModal, userPage, userSearch]);
 
   const handleProcess = (transaction) => {
     setSelectedTransaction(transaction);
@@ -54,6 +69,42 @@ const WalletTransactions = () => {
       );
     } catch (err) {
       toast.error(err?.message || 'Failed to update transaction');
+    }
+  };
+
+  const handleAddTransaction = async () => {
+    if (!addForm.userId) {
+      toast.error('Please select a user');
+      return;
+    }
+    if (!addForm.amount || parseFloat(addForm.amount) <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      await dispatch(
+        createWalletTransaction({
+          userId: addForm.userId,
+          amount: parseFloat(addForm.amount),
+          type: addForm.type,
+          remarks: addForm.remarks,
+        })
+      ).unwrap();
+      toast.success('Transaction created successfully');
+      setShowAddModal(false);
+      setAddForm({ userId: '', amount: '', type: 'credit', remarks: '' });
+      setUserSearch('');
+      dispatch(
+        fetchWalletTransactions({
+          page,
+          limit: 20,
+          status: statusFilter,
+          transaction_type: typeFilter,
+        })
+      );
+    } catch (err) {
+      toast.error(err?.message || 'Failed to create transaction');
     }
   };
 
@@ -130,6 +181,9 @@ const WalletTransactions = () => {
             </option>
           ))}
         </select>
+        <button className="btn-add" onClick={() => setShowAddModal(true)}>
+          + Add Transaction
+        </button>
       </div>
 
       {loading ? (
@@ -317,6 +371,101 @@ const WalletTransactions = () => {
               </button>
               <button className="btn-save" onClick={handleSave} disabled={updateLoading}>
                 {updateLoading ? 'Updating...' : 'Update Transaction'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Transaction Modal */}
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Add Manual Transaction</h2>
+
+            <div className="form-grid">
+              <div className="form-group full-width">
+                <label>User</label>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Search by name, mobile, or email..."
+                    value={userSearch}
+                    onChange={(e) => {
+                      setUserSearch(e.target.value);
+                      setUserPage(1);
+                    }}
+                    style={{ marginBottom: '0.5rem' }}
+                  />
+                </div>
+                <select
+                  value={addForm.userId}
+                  onChange={(e) => setAddForm({ ...addForm, userId: e.target.value })}
+                  disabled={usersLoading}
+                >
+                  <option value="">Select a user...</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.first_name} {user.last_name || ''} ({user.mobile}) - Balance: ₹{user.wallet_balance || 0}
+                    </option>
+                  ))}
+                </select>
+                {users.length === 0 && !usersLoading && (
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                    No users found. Try a different search.
+                  </p>
+                )}
+                {usersLoading && (
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                    Loading users...
+                  </p>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Amount (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={addForm.amount}
+                  onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Type</label>
+                <select
+                  value={addForm.type}
+                  onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
+                >
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+              </div>
+
+              <div className="form-group full-width">
+                <label>Remarks (Optional)</label>
+                <textarea
+                  value={addForm.remarks}
+                  onChange={(e) => setAddForm({ ...addForm, remarks: e.target.value })}
+                  placeholder="Add remarks for this transaction..."
+                />
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => {
+                setShowAddModal(false);
+                setAddForm({ userId: '', amount: '', type: 'credit', remarks: '' });
+                setUserSearch('');
+              }}>
+                Cancel
+              </button>
+              <button className="btn-save" onClick={handleAddTransaction} disabled={createLoading}>
+                {createLoading ? 'Creating...' : 'Create Transaction'}
               </button>
             </div>
           </div>

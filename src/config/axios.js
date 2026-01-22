@@ -142,6 +142,7 @@ export const API_ENDPOINTS = {
 
   // Wallet Transactions
   WALLET_TRANSACTIONS: '/api/admin/wallet-transactions',
+  CREATE_WALLET_TRANSACTION: '/api/admin/wallet-transactions',
   WALLET_TRANSACTION_STATUS: (id) => `/api/admin/wallet-transactions/${id}/status`,
 };
 

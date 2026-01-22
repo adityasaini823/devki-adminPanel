@@ -21,6 +21,24 @@ export const fetchWalletTransactions = createAsyncThunk(
   }
 );
 
+// Create manual wallet transaction
+export const createWalletTransaction = createAsyncThunk(
+  'wallet/create',
+  async ({ userId, amount, type, remarks }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(API_ENDPOINTS.CREATE_WALLET_TRANSACTION, {
+        userId,
+        amount,
+        type,
+        remarks,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create transaction');
+    }
+  }
+);
+
 // Update wallet transaction status
 export const updateWalletTransactionStatus = createAsyncThunk(
   'wallet/updateStatus',
@@ -43,6 +61,7 @@ const initialState = {
   loading: false,
   error: null,
   updateLoading: false,
+  createLoading: false,
 };
 
 const walletSlice = createSlice({
@@ -67,6 +86,18 @@ const walletSlice = createSlice({
       })
       .addCase(fetchWalletTransactions.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+      // Create transaction
+      .addCase(createWalletTransaction.pending, (state) => {
+        state.createLoading = true;
+        state.error = null;
+      })
+      .addCase(createWalletTransaction.fulfilled, (state) => {
+        state.createLoading = false;
+      })
+      .addCase(createWalletTransaction.rejected, (state, action) => {
+        state.createLoading = false;
         state.error = action.payload;
       })
       // Update transaction status
