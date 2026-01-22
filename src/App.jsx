@@ -12,6 +12,7 @@ import Subscriptions from './pages/Subscriptions';
 import WalletTransactions from './pages/WalletTransactions';
 import Settings from './pages/Settings';
 import TodaysDeliveries from './pages/TodaysDeliveries';
+import SubscriptionProducts from './pages/SubscriptionProducts';
 import Layout from './components/Layout';
 
 const PrivateRoute = ({ children }) => {
@@ -61,6 +62,7 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="subscription-products" element={<SubscriptionProducts />} />
           <Route path="wallet" element={<WalletTransactions />} />
           <Route path="deliveries" element={<TodaysDeliveries />} />
           <Route path="settings" element={<Settings />} />

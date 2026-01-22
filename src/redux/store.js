@@ -5,6 +5,7 @@ import usersReducer from './slices/usersSlice';
 import productsReducer from './slices/productsSlice';
 import ordersReducer from './slices/ordersSlice';
 import subscriptionsReducer from './slices/subscriptionsSlice';
+import subscriptionProductsReducer from './slices/subscriptionProductsSlice';
 import walletReducer from './slices/walletSlice';
 
 export const store = configureStore({
@@ -15,6 +16,7 @@ export const store = configureStore({
     products: productsReducer,
     orders: ordersReducer,
     subscriptions: subscriptionsReducer,
+    subscriptionProducts: subscriptionProductsReducer,
     wallet: walletReducer,
   },
   middleware: (getDefaultMiddleware) =>

@@ -3,10 +3,6 @@ import { toast } from 'react-hot-toast';
 import api from '../config/axios';
 import './Settings.css';
 
-// Create a new API service for settings if not exists, 
-// or simpler to just direct fetch here for this specific page
-// assuming api helper manages auth token.
-
 export default function Settings() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
@@ -15,6 +11,9 @@ export default function Settings() {
             upi_id: '',
             minimum_deposit: 10,
             minimum_withdrawal: 100
+        },
+        delivery: {
+            slots: []
         },
         general: {
             app_name: 'Devki App',
@@ -25,10 +24,14 @@ export default function Settings() {
     const fetchSettings = async () => {
         try {
             setLoading(true);
-            // Using existing axios instance 'api'
             const response = await api.get('/api/settings');
             if (response.data.success) {
-                setSettings(response.data.settings);
+                // Ensure slots is initialized if missing
+                const fetchedSettings = response.data.settings;
+                if (!fetchedSettings.delivery) {
+                    fetchedSettings.delivery = { slots: [] };
+                }
+                setSettings(fetchedSettings);
             }
         } catch (error) {
             toast.error('Failed to load settings');
@@ -48,6 +51,51 @@ export default function Settings() {
             [section]: {
                 ...prev[section],
                 [field]: value
+            }
+        }));
+    };
+
+    // Delivery Slot Handlers
+    const handleSlotChange = (index, field, value) => {
+        const newSlots = [...(settings.delivery?.slots || [])];
+        newSlots[index] = { ...newSlots[index], [field]: value };
+
+        setSettings(prev => ({
+            ...prev,
+            delivery: {
+                ...prev.delivery,
+                slots: newSlots
+            }
+        }));
+    };
+
+    const handleAddSlot = () => {
+        const newSlot = {
+            id: Date.now().toString(),
+            label: 'New Slot',
+            startTime: '12:00',
+            endTime: '13:00',
+            isEnabled: true
+        };
+
+        setSettings(prev => ({
+            ...prev,
+            delivery: {
+                ...prev.delivery,
+                slots: [...(prev.delivery?.slots || []), newSlot]
+            }
+        }));
+    };
+
+    const handleRemoveSlot = (index) => {
+        const newSlots = [...(settings.delivery?.slots || [])];
+        newSlots.splice(index, 1);
+
+        setSettings(prev => ({
+            ...prev,
+            delivery: {
+                ...prev.delivery,
+                slots: newSlots
             }
         }));
     };
@@ -76,10 +124,91 @@ export default function Settings() {
         <div className="settings-container">
             <header className="settings-header">
                 <h1 className="settings-title">System Settings</h1>
-                <p className="settings-subtitle">Manage global application configurations and payment gateways</p>
+                <p className="settings-subtitle">Manage global application configurations</p>
             </header>
 
             <form onSubmit={handleSubmit} className="settings-content">
+
+                {/* Delivery Timings Card */}
+                <div className="settings-card">
+                    <div className="card-header">
+                        <div className="card-icon">⏰</div>
+                        <h2 className="card-title">Delivery Timings</h2>
+                    </div>
+
+                    <div className="slots-container">
+                        {settings.delivery?.slots?.map((slot, index) => (
+                            <div key={index} className="slot-item" style={{
+                                display: 'flex',
+                                gap: '1rem',
+                                alignItems: 'center',
+                                marginBottom: '1rem',
+                                padding: '1rem',
+                                backgroundColor: '#f9fafb',
+                                borderRadius: '0.5rem',
+                                border: '1px solid #e5e7eb'
+                            }}>
+                                <div style={{ flex: 2 }}>
+                                    <label className="form-label text-xs">Label</label>
+                                    <input
+                                        type="text"
+                                        value={slot.label}
+                                        onChange={(e) => handleSlotChange(index, 'label', e.target.value)}
+                                        className="form-input"
+                                        placeholder="Morning"
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label className="form-label text-xs">Start Time</label>
+                                    <input
+                                        type="time"
+                                        value={slot.startTime}
+                                        onChange={(e) => handleSlotChange(index, 'startTime', e.target.value)}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label className="form-label text-xs">End Time</label>
+                                    <input
+                                        type="time"
+                                        value={slot.endTime}
+                                        onChange={(e) => handleSlotChange(index, 'endTime', e.target.value)}
+                                        className="form-input"
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <label className="form-label text-xs">Active</label>
+                                    <input
+                                        type="checkbox"
+                                        checked={slot.isEnabled}
+                                        onChange={(e) => handleSlotChange(index, 'isEnabled', e.target.checked)}
+                                        style={{ width: '1.25rem', height: '1.25rem' }}
+                                    />
+                                </div>
+                                <div style={{ paddingTop: '1.5rem' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveSlot(index)}
+                                        className="btn-delete"
+                                        style={{ padding: '0.5rem' }}
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        <button
+                            type="button"
+                            onClick={handleAddSlot}
+                            className="btn-add"
+                            style={{ marginTop: '0.5rem' }}
+                        >
+                            + Add Delivery Slot
+                        </button>
+                    </div>
+                </div>
+
                 {/* Payment Settings Card */}
                 <div className="settings-card">
                     <div className="card-header">
@@ -136,7 +265,6 @@ export default function Settings() {
                             onChange={(e) => handleChange('general', 'app_name', e.target.value)}
                             className="form-input"
                         />
-                        <p className="form-hint">Displayed in emails and the app header.</p>
                     </div>
 
                     <div className="form-group">
@@ -147,7 +275,6 @@ export default function Settings() {
                             onChange={(e) => handleChange('general', 'support_email', e.target.value)}
                             className="form-input"
                         />
-                        <p className="form-hint">Where user support queries will be sent.</p>
                     </div>
                 </div>
 
