@@ -138,17 +138,8 @@ export default function Settings() {
 
                     <div className="slots-container">
                         {settings.delivery?.slots?.map((slot, index) => (
-                            <div key={index} className="slot-item" style={{
-                                display: 'flex',
-                                gap: '1rem',
-                                alignItems: 'center',
-                                marginBottom: '1rem',
-                                padding: '1rem',
-                                backgroundColor: '#f9fafb',
-                                borderRadius: '0.5rem',
-                                border: '1px solid #e5e7eb'
-                            }}>
-                                <div style={{ flex: 2 }}>
+                            <div key={index} className="slot-item">
+                                <div className="slot-label-group">
                                     <label className="form-label text-xs">Label</label>
                                     <input
                                         type="text"
@@ -158,7 +149,7 @@ export default function Settings() {
                                         placeholder="Morning"
                                     />
                                 </div>
-                                <div style={{ flex: 1 }}>
+                                <div className="slot-time-group">
                                     <label className="form-label text-xs">Start Time</label>
                                     <input
                                         type="time"
@@ -167,7 +158,7 @@ export default function Settings() {
                                         className="form-input"
                                     />
                                 </div>
-                                <div style={{ flex: 1 }}>
+                                <div className="slot-time-group">
                                     <label className="form-label text-xs">End Time</label>
                                     <input
                                         type="time"
@@ -176,16 +167,16 @@ export default function Settings() {
                                         className="form-input"
                                     />
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <div className="slot-active-group">
                                     <label className="form-label text-xs">Active</label>
                                     <input
                                         type="checkbox"
                                         checked={slot.isEnabled}
                                         onChange={(e) => handleSlotChange(index, 'isEnabled', e.target.checked)}
-                                        style={{ width: '1.25rem', height: '1.25rem' }}
+                                        style={{ width: '1.25rem', height: '1.25rem', cursor: 'cursor' }}
                                     />
                                 </div>
-                                <div style={{ paddingTop: '1.5rem' }}>
+                                <div className="slot-delete-group">
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveSlot(index)}

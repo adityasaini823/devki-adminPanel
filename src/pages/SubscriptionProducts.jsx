@@ -126,7 +126,6 @@ const SubscriptionProducts = () => {
                                     <th>Name</th>
                                     <th>Quantity</th>
                                     <th>Price / Delivery</th>
-                                    <th>Unit Price</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -148,7 +147,6 @@ const SubscriptionProducts = () => {
                                             <td className="name-cell">{product.name}</td>
                                             <td>{product.quantity}</td>
                                             <td className="wallet-cell">{formatCurrency(product.price_per_delivery)}</td>
-                                            <td>{formatCurrency(product.price_per_unit)}</td>
                                             <td>
                                                 <span
                                                     className="status-badge"
@@ -222,18 +220,7 @@ const SubscriptionProducts = () => {
                                     required
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Price Per Unit (Ref only) *</label>
-                                <input
-                                    type="number"
-                                    placeholder="e.g. 40 (if 1L)"
-                                    value={editForm.price_per_unit}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, price_per_unit: parseFloat(e.target.value) })
-                                    }
-                                    required
-                                />
-                            </div>
+
                             <div className="form-group full-width">
                                 <label>Image *</label>
                                 <ImageUpload
