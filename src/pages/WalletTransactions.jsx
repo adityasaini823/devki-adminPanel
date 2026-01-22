@@ -17,12 +17,13 @@ const WalletTransactions = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [updateForm, setUpdateForm] = useState({ status: '', admin_remarks: '' });
-  
+
   // Add transaction modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ userId: '', amount: '', type: 'credit', remarks: '' });
   const [userSearch, setUserSearch] = useState('');
   const [userPage, setUserPage] = useState(1);
+  const [viewProofUrl, setViewProofUrl] = useState(null);
 
   useEffect(() => {
     dispatch(
@@ -199,6 +200,7 @@ const WalletTransactions = () => {
                   <th>Customer</th>
                   <th>Type</th>
                   <th>Amount</th>
+                  <th>Proof</th>
                   <th>Payment Method</th>
                   <th>Status</th>
                   <th>Date</th>
@@ -223,6 +225,20 @@ const WalletTransactions = () => {
                         </span>
                       </td>
                       <td className="wallet-cell">{formatCurrency(txn.amount)}</td>
+                      <td className="center-cell">
+                        {txn.payment_proof ? (
+                          <button
+                            className="btn-icon"
+                            onClick={(e) => { e.stopPropagation(); setViewProofUrl(txn.payment_proof); }}
+                            title="View Payment Proof"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                          >
+                            📷
+                          </button>
+                        ) : (
+                          <span style={{ color: '#ccc' }}>-</span>
+                        )}
+                      </td>
                       <td style={{ textTransform: 'uppercase' }}>{txn.payment_method || '-'}</td>
                       <td>
                         <span
@@ -467,6 +483,34 @@ const WalletTransactions = () => {
               <button className="btn-save" onClick={handleAddTransaction} disabled={createLoading}>
                 {createLoading ? 'Creating...' : 'Create Transaction'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* View Proof Modal */}
+      {viewProofUrl && (
+        <div className="modal-overlay" onClick={() => setViewProofUrl(null)}>
+          <div className="modal" style={{ maxWidth: '600px', width: '90%', padding: '1rem' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3>Payment Proof</h3>
+              <button
+                onClick={() => setViewProofUrl(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                &times;
+              </button>
+            </div>
+            <div style={{ textAlign: 'center', background: '#f0f0f0', borderRadius: '8px', padding: '10px' }}>
+              <img
+                src={viewProofUrl}
+                alt="Payment Proof"
+                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '4px', objectFit: 'contain' }}
+              />
+            </div>
+            <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+              <a href={viewProofUrl} target="_blank" rel="noopener noreferrer" className="btn-view" style={{ textDecoration: 'none', display: 'inline-block' }}>
+                Open Full Size
+              </a>
             </div>
           </div>
         </div>
