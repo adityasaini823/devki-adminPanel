@@ -22,6 +22,7 @@ const Layout = () => {
     { path: '/products', label: 'Products', icon: '📦' },
     { path: '/orders', label: 'Orders', icon: '🛒' },
     { path: '/subscriptions', label: 'Subscriptions', icon: '🔄' },
+    { path: '/deliveries', label: "Today's Deliveries", icon: '📦' },
     { path: '/wallet', label: 'Wallet Transactions', icon: '💰' },
     { path: '/settings', label: 'Settings', icon: '⚙️' },
   ];
